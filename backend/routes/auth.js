@@ -17,7 +17,7 @@ const generateToken = (userId) => {
  * @swagger
  * /api/auth/register:
  *   post:
- *     summary: Inscription d'un nouvel utilisateur
+ *     summary: Inscription utilisateur
  *     tags: [Authentication]
  *     security: []
  *     requestBody:
@@ -112,7 +112,7 @@ router.post("/register", async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Utilisateur créé avec succès",
+      message: "Utilisateur créé",
       data: {
         user: user.getPublicProfile(),
         token,
@@ -141,7 +141,7 @@ router.post("/register", async (req, res) => {
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Connexion d'un utilisateur
+ *     summary: Connexion utilisateur
  *     tags: [Authentication]
  *     security: []
  *     requestBody:

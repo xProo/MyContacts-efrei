@@ -9,23 +9,22 @@ const connectDB = async () => {
   try {
     await mongoose.connect(MONGODB_URI);
 
-    console.log(" Connexion à MongoDB Atlas réussie !");
-    console.log(` Base de données: ${mongoose.connection.name}`);
+    console.log("Connexion à MongoDB réussie");
+    console.log(`Base de données: ${mongoose.connection.name}`);
 
-    // Écouter les événements de connexion
     mongoose.connection.on("error", (err) => {
-      console.error(" Erreur MongoDB:", err);
+      console.error("Erreur MongoDB:", err);
     });
 
     mongoose.connection.on("disconnected", () => {
-      console.log("  MongoDB déconnecté");
+      console.log("MongoDB déconnecté");
     });
 
     mongoose.connection.on("reconnected", () => {
-      console.log(" MongoDB reconnecté");
+      console.log("MongoDB reconnecté");
     });
   } catch (error) {
-    console.error(" Erreur de connexion à MongoDB:", error);
+    console.error("Erreur de connexion à MongoDB:", error);
     process.exit(1);
   }
 };

@@ -101,9 +101,8 @@ const contactRoutes = require("./routes/contacts");
 // Routes principales
 app.get("/", (req, res) => {
   res.json({
-    message: "🚀 API MyContacts démarrée avec succès !",
+    message: "API MyContacts démarrée",
     status: "OK",
-    database: "MongoDB Atlas connecté",
     version: "1.0.0",
     endpoints: {
       auth: "/api/auth",
@@ -163,7 +162,6 @@ app.use((error, req, res, next) => {
 const PORT = config.PORT;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-  console.log(`📱 URL: http://localhost:${PORT}`);
-  console.log(`🔗 Test DB: http://localhost:${PORT}/api/test-db`);
+  console.log(`Serveur démarré sur le port ${PORT}`);
+  console.log(`URL: http://localhost:${PORT}`);
 });
