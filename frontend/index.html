@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyContacts - Carnet de contacts</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input,
+      button {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .hidden {
+        display: none;
+      }
+      .contact-item {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+        background: #f9f9f9;
+      }
+      .error {
+        color: red;
+        margin-top: 10px;
+      }
+      .success {
+        color: green;
+        margin-top: 10px;
+      }
+      .logout-btn {
+        background-color: #dc3545;
+        width: auto;
+        float: right;
+      }
+      .logout-btn:hover {
+        background-color: #c82333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📞 MyContacts</h1>
+
+      <!-- Formulaire de connexion/inscription -->
+      <div id="authSection">
+        <h2>Connexion / Inscription</h2>
+
+        <div class="form-group">
+          <label>Mode :</label>
+          <button onclick="toggleAuthMode()" id="authToggle">
+            Passer à l'inscription
+          </button>
+        </div>
+
+        <form id="authForm">
+          <div class="form-group">
+            <label for="name">Nom :</label>
+            <input type="text" id="name" name="name" required />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email :</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Mot de passe :</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+
+          <button type="submit" id="authButton">Se connecter</button>
+        </form>
+
+        <div id="authMessage"></div>
+      </div>
+
+      <!-- Interface principale (cachée au début) -->
+      <div id="mainSection" class="hidden">
+        <button onclick="logout()" class="logout-btn">Déconnexion</button>
+        <h2>Mes Contacts</h2>
+
+        <!-- Formulaire d'ajout de contact -->
+        <div class="form-group">
+          <h3>Ajouter un contact</h3>
+          <form id="contactForm">
+            <div class="form-group">
+              <label for="contactName">Nom :</label>
+              <input type="text" id="contactName" name="name" required />
+            </div>
+
+            <div class="form-group">
+              <label for="contactEmail">Email :</label>
+              <input type="email" id="contactEmail" name="email" required />
+            </div>
+
+            <div class="form-group">
+              <label for="contactPhone">Téléphone :</label>
+              <input type="tel" id="contactPhone" name="phone" required />
+            </div>
+
+            <button type="submit">Ajouter le contact</button>
+          </form>
+        </div>
+
+        <!-- Liste des contacts -->
+        <div id="contactsList">
+          <h3>Liste des contacts</h3>
+          <div id="contacts"></div>
+        </div>
+
+        <div id="message"></div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:3001/api";
+      let currentUser = null;
+      let authToken = null;
+      let isLoginMode = true;
+
+      // Toggle entre connexion et inscription
+      function toggleAuthMode() {
+        isLoginMode = !isLoginMode;
+        const toggleBtn = document.getElementById("authToggle");
+        const authBtn = document.getElementById("authButton");
+        const nameField = document.getElementById("name").parentElement;
+
+        if (isLoginMode) {
+          toggleBtn.textContent = "Passer à l'inscription";
+          authBtn.textContent = "Se connecter";
+          nameField.style.display = "none";
+        } else {
+          toggleBtn.textContent = "Passer à la connexion";
+          authBtn.textContent = "S'inscrire";
+          nameField.style.display = "block";
+        }
+      }
+
+      // Gestion du formulaire d'authentification
+      document
+        .getElementById("authForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData);
+
+          if (!isLoginMode && !data.name) {
+            showMessage("Le nom est requis pour l'inscription", "error");
+            return;
+          }
+
+          try {
+            const endpoint = isLoginMode ? "/auth/login" : "/auth/register";
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              currentUser = result.data.user;
+              authToken = result.data.token;
+              showMainInterface();
+              showMessage(
+                isLoginMode ? "Connexion réussie !" : "Inscription réussie !",
+                "success"
+              );
+              loadContacts();
+            } else {
+              showMessage(result.message, "error");
+            }
+          } catch (error) {
+            showMessage("Erreur de connexion au serveur", "error");
+          }
+        });
+
+      // Afficher l'interface principale
+      function showMainInterface() {
+        document.getElementById("authSection").classList.add("hidden");
+        document.getElementById("mainSection").classList.remove("hidden");
+      }
+
+      // Déconnexion
+      function logout() {
+        currentUser = null;
+        authToken = null;
+        document.getElementById("authSection").classList.remove("hidden");
+        document.getElementById("mainSection").classList.add("hidden");
+        document.getElementById("contacts").innerHTML = "";
+      }
+
+      // Gestion du formulaire de contact
+      document
+        .getElementById("contactForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData);
+
+          try {
+            const response = await fetch(`${API_BASE}/contacts`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              showMessage("Contact ajouté avec succès !", "success");
+              e.target.reset();
+              loadContacts();
+            } else {
+              showMessage(result.message, "error");
+            }
+          } catch (error) {
+            showMessage("Erreur lors de l'ajout du contact", "error");
+          }
+        });
+
+      // Charger les contacts
+      async function loadContacts() {
+        try {
+          const response = await fetch(`${API_BASE}/contacts`, {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            displayContacts(result.data.contacts);
+          } else {
+            showMessage("Erreur lors du chargement des contacts", "error");
+          }
+        } catch (error) {
+          showMessage("Erreur de connexion au serveur", "error");
+        }
+      }
+
+      // Afficher les contacts
+      function displayContacts(contacts) {
+        const contactsDiv = document.getElementById("contacts");
+
+        if (contacts.length === 0) {
+          contactsDiv.innerHTML = "<p>Aucun contact trouvé.</p>";
+          return;
+        }
+
+        contactsDiv.innerHTML = contacts
+          .map(
+            (contact) => `
+                <div class="contact-item">
+                    <h4>${contact.name}</h4>
+                    <p><strong>Email :</strong> ${contact.email}</p>
+                    <p><strong>Téléphone :</strong> ${contact.phone}</p>
+                    <p><strong>Créé le :</strong> ${new Date(
+                      contact.createdAt
+                    ).toLocaleDateString()}</p>
+                </div>
+            `
+          )
+          .join("");
+      }
+
+      // Afficher les messages
+      function showMessage(message, type) {
+        const messageDiv = document.getElementById("message");
+        messageDiv.textContent = message;
+        messageDiv.className = type;
+      }
+
+      // Initialisation
+      document.addEventListener("DOMContentLoaded", () => {
+        // Cacher le champ nom au début (mode connexion)
+        document.getElementById("name").parentElement.style.display = "none";
+      });
+    </script>
+  </body>
+</html>
