@@ -4,9 +4,95 @@ const { authenticateToken } = require("../middleware/auth");
 
 const router = express.Router();
 
-// @route   GET /api/contacts
-// @desc    Récupérer tous les contacts de l'utilisateur
-// @access  Private
+/**
+ * @swagger
+ * /api/contacts:
+ *   get:
+ *     summary: Récupérer tous les contacts de l'utilisateur
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Numéro de page
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Nombre de contacts par page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Terme de recherche
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [name, email, phone, createdAt]
+ *           default: name
+ *         description: Champ de tri
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Ordre de tri
+ *     responses:
+ *       200:
+ *         description: Liste des contacts récupérée avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     contacts:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Contact'
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         currentPage:
+ *                           type: integer
+ *                           example: 1
+ *                         totalPages:
+ *                           type: integer
+ *                           example: 5
+ *                         totalContacts:
+ *                           type: integer
+ *                           example: 50
+ *                         hasNext:
+ *                           type: boolean
+ *                           example: true
+ *                         hasPrev:
+ *                           type: boolean
+ *                           example: false
+ *       401:
+ *         description: Token invalide ou manquant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get("/", authenticateToken, async (req, res) => {
   try {
     const {
@@ -66,9 +152,56 @@ router.get("/", authenticateToken, async (req, res) => {
   }
 });
 
-// @route   GET /api/contacts/:id
-// @desc    Récupérer un contact spécifique
-// @access  Private
+/**
+ * @swagger
+ * /api/contacts/{id}:
+ *   get:
+ *     summary: Récupérer un contact spécifique
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du contact
+ *     responses:
+ *       200:
+ *         description: Contact récupéré avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     contact:
+ *                       $ref: '#/components/schemas/Contact'
+ *       404:
+ *         description: Contact non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Token invalide ou manquant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get("/:id", authenticateToken, async (req, res) => {
   try {
     const contact = await Contact.findOne({
@@ -98,9 +231,73 @@ router.get("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// @route   POST /api/contacts
-// @desc    Créer un nouveau contact
-// @access  Private
+/**
+ * @swagger
+ * /api/contacts:
+ *   post:
+ *     summary: Créer un nouveau contact
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - phone
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Marie Martin"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "marie.martin@example.com"
+ *               phone:
+ *                 type: string
+ *                 example: "0123456789"
+ *     responses:
+ *       201:
+ *         description: Contact créé avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Contact créé avec succès"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     contact:
+ *                       $ref: '#/components/schemas/Contact'
+ *       400:
+ *         description: Données invalides ou contact déjà existant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Token invalide ou manquant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post("/", authenticateToken, async (req, res) => {
   try {
     const contactData = {
@@ -144,9 +341,82 @@ router.post("/", authenticateToken, async (req, res) => {
   }
 });
 
-// @route   PUT /api/contacts/:id
-// @desc    Mettre à jour un contact
-// @access  Private
+/**
+ * @swagger
+ * /api/contacts/{id}:
+ *   put:
+ *     summary: Mettre à jour un contact
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du contact
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Marie Martin"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "marie.martin@example.com"
+ *               phone:
+ *                 type: string
+ *                 example: "0123456789"
+ *     responses:
+ *       200:
+ *         description: Contact mis à jour avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Contact mis à jour avec succès"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     contact:
+ *                       $ref: '#/components/schemas/Contact'
+ *       400:
+ *         description: Données invalides ou contact déjà existant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Contact non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Token invalide ou manquant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.put("/:id", authenticateToken, async (req, res) => {
   try {
     const contact = await Contact.findOneAndUpdate(
@@ -195,9 +465,54 @@ router.put("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// @route   DELETE /api/contacts/:id
-// @desc    Supprimer un contact
-// @access  Private
+/**
+ * @swagger
+ * /api/contacts/{id}:
+ *   delete:
+ *     summary: Supprimer un contact
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du contact
+ *     responses:
+ *       200:
+ *         description: Contact supprimé avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Contact supprimé avec succès"
+ *       404:
+ *         description: Contact non trouvé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Token invalide ou manquant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erreur serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.delete("/:id", authenticateToken, async (req, res) => {
   try {
     const contact = await Contact.findOneAndDelete({

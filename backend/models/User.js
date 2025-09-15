@@ -27,10 +27,6 @@ const userSchema = new mongoose.Schema(
       minlength: [6, "Le mot de passe doit contenir au moins 6 caractères"],
       select: false, // Ne pas inclure le mot de passe dans les requêtes par défaut
     },
-    avatar: {
-      type: String,
-      default: "",
-    },
     isActive: {
       type: Boolean,
       default: true,
@@ -71,4 +67,3 @@ userSchema.methods.getPublicProfile = function () {
 };
 
 module.exports = mongoose.model("User", userSchema);
-

@@ -43,7 +43,6 @@ Authorization: Bearer <votre_token_jwt>
       "_id": "...",
       "name": "John Doe",
       "email": "john@example.com",
-      "avatar": "",
       "isActive": true,
       "createdAt": "...",
       "updatedAt": "..."
@@ -106,8 +105,7 @@ Authorization: Bearer <votre_token_jwt>
 
 ```json
 {
-  "name": "John Smith",
-  "avatar": "https://example.com/avatar.jpg"
+  "name": "John Smith"
 }
 ```
 

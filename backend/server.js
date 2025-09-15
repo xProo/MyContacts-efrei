@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/database");
 const config = require("./config/config");
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
 
 // Charger les variables d'environnement
 require("dotenv").config();
@@ -20,6 +22,77 @@ app.use(express.urlencoded({ extended: true }));
 
 // Connexion à la base de données
 connectDB();
+
+// Configuration Swagger
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "MyContacts API",
+      version: "1.0.0",
+      description: "API pour la gestion de contacts personnels",
+      contact: {
+        name: "Sohane Chamen",
+        email: "sohane.chamen@efrei.net",
+      },
+    },
+    servers: [
+      {
+        url: `http://localhost:${config.PORT}`,
+        description: "Serveur de développement",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+      schemas: {
+        User: {
+          type: "object",
+          properties: {
+            _id: { type: "string" },
+            name: { type: "string" },
+            email: { type: "string", format: "email" },
+            isActive: { type: "boolean" },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
+        Contact: {
+          type: "object",
+          properties: {
+            _id: { type: "string" },
+            name: { type: "string" },
+            email: { type: "string", format: "email" },
+            phone: { type: "string" },
+            user: { type: "string" },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
+        Error: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: false },
+            message: { type: "string" },
+          },
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  apis: ["./routes/*.js"],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // Import des routes
 const authRoutes = require("./routes/auth");
@@ -60,6 +133,9 @@ app.get("/api/test-db", async (req, res) => {
     });
   }
 });
+
+// Route Swagger
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Utilisation des routes
 app.use("/api/auth", authRoutes);
