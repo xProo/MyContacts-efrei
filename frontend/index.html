@@ -74,6 +74,35 @@
       .logout-btn:hover {
         background-color: #c82333;
       }
+      .contact-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+      }
+      .btn-edit {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .btn-edit:hover {
+        background-color: #218838;
+      }
+      .btn-delete {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .btn-delete:hover {
+        background-color: #c82333;
+      }
     </style>
   </head>
   <body>
@@ -94,7 +123,7 @@
         <form id="authForm">
           <div class="form-group">
             <label for="name">Nom :</label>
-            <input type="text" id="name" name="name" required />
+            <input type="text" id="name" name="name" />
           </div>
 
           <div class="form-group">
@@ -118,10 +147,11 @@
         <button onclick="logout()" class="logout-btn">Déconnexion</button>
         <h2>Mes Contacts</h2>
 
-        <!-- Formulaire d'ajout de contact -->
+        <!-- Formulaire d'ajout/modification de contact -->
         <div class="form-group">
-          <h3>Ajouter un contact</h3>
+          <h3 id="formTitle">Ajouter un contact</h3>
           <form id="contactForm">
+            <input type="hidden" id="contactId" name="id" />
             <div class="form-group">
               <label for="contactName">Nom :</label>
               <input type="text" id="contactName" name="name" required />
@@ -137,7 +167,19 @@
               <input type="tel" id="contactPhone" name="phone" required />
             </div>
 
-            <button type="submit">Ajouter le contact</button>
+            <button type="submit" id="submitBtn">Ajouter le contact</button>
+            <button
+              type="button"
+              id="cancelBtn"
+              onclick="cancelEdit()"
+              style="
+                display: none;
+                margin-left: 10px;
+                background-color: #6c757d;
+              "
+            >
+              Annuler
+            </button>
           </form>
         </div>
 
@@ -163,15 +205,18 @@
         const toggleBtn = document.getElementById("authToggle");
         const authBtn = document.getElementById("authButton");
         const nameField = document.getElementById("name").parentElement;
+        const nameInput = document.getElementById("name");
 
         if (isLoginMode) {
           toggleBtn.textContent = "Passer à l'inscription";
           authBtn.textContent = "Se connecter";
           nameField.style.display = "none";
+          nameInput.removeAttribute("required"); // Retirer l'attribut required en mode connexion
         } else {
           toggleBtn.textContent = "Passer à la connexion";
           authBtn.textContent = "S'inscrire";
           nameField.style.display = "block";
+          nameInput.setAttribute("required", "required"); // Ajouter l'attribut required en mode inscription
         }
       }
 
@@ -184,7 +229,7 @@
           const formData = new FormData(e.target);
           const data = Object.fromEntries(formData);
 
-          if (!isLoginMode && !data.name) {
+          if (!isLoginMode && (!data.name || data.name.trim() === "")) {
             showMessage("Le nom est requis pour l'inscription", "error");
             return;
           }
@@ -233,39 +278,6 @@
         document.getElementById("contacts").innerHTML = "";
       }
 
-      // Gestion du formulaire de contact
-      document
-        .getElementById("contactForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
-
-          const formData = new FormData(e.target);
-          const data = Object.fromEntries(formData);
-
-          try {
-            const response = await fetch(`${API_BASE}/contacts`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${authToken}`,
-              },
-              body: JSON.stringify(data),
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-              showMessage("Contact ajouté avec succès !", "success");
-              e.target.reset();
-              loadContacts();
-            } else {
-              showMessage(result.message, "error");
-            }
-          } catch (error) {
-            showMessage("Erreur lors de l'ajout du contact", "error");
-          }
-        });
-
       // Charger les contacts
       async function loadContacts() {
         try {
@@ -306,6 +318,14 @@
                     <p><strong>Créé le :</strong> ${new Date(
                       contact.createdAt
                     ).toLocaleDateString()}</p>
+                    <div class="contact-actions">
+                      <button class="btn-edit" onclick="editContact('${
+                        contact._id
+                      }')">Modifier</button>
+                      <button class="btn-delete" onclick="deleteContact('${
+                        contact._id
+                      }')">Supprimer</button>
+                    </div>
                 </div>
             `
           )
@@ -319,10 +339,181 @@
         messageDiv.className = type;
       }
 
+      // Variables globales
+      let isEditMode = false;
+      let currentEditId = null;
+
+      // Fonction pour basculer le mode d'édition
+      function toggleEditMode(editId = null) {
+        isEditMode = editId !== null;
+        currentEditId = editId;
+
+        const formTitle = document.getElementById("formTitle");
+        const submitBtn = document.getElementById("submitBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+
+        if (isEditMode) {
+          formTitle.textContent = "Modifier le contact";
+          submitBtn.textContent = "Mettre à jour";
+          cancelBtn.style.display = "inline-block";
+        } else {
+          formTitle.textContent = "Ajouter un contact";
+          submitBtn.textContent = "Ajouter le contact";
+          cancelBtn.style.display = "none";
+          // Ne pas reset le formulaire ici, on le fait dans cancelEdit()
+        }
+      }
+
+      // Fonction pour annuler l'édition
+      function cancelEdit() {
+        // Remettre en mode ajout
+        isEditMode = false;
+        currentEditId = null;
+
+        // Mettre à jour l'interface
+        document.getElementById("formTitle").textContent = "Ajouter un contact";
+        document.getElementById("submitBtn").textContent = "Ajouter le contact";
+        document.getElementById("cancelBtn").style.display = "none";
+
+        // Vider le formulaire
+        document.getElementById("contactForm").reset();
+        document.getElementById("contactId").value = "";
+      }
+
+      // Fonction pour modifier un contact
+      async function editContact(contactId) {
+        try {
+          const response = await fetch(`${API_BASE}/contacts/${contactId}`, {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            const contact = result.data.contact;
+
+            // Remplir le formulaire avec les données du contact
+            document.getElementById("contactId").value = contact._id;
+            document.getElementById("contactName").value = contact.name;
+            document.getElementById("contactEmail").value = contact.email;
+            document.getElementById("contactPhone").value = contact.phone;
+
+            // Basculer en mode édition
+            toggleEditMode(contactId);
+
+            // Scroll vers le formulaire
+            document
+              .getElementById("contactForm")
+              .scrollIntoView({ behavior: "smooth" });
+          } else {
+            showMessage("Erreur lors du chargement du contact", "error");
+          }
+        } catch (error) {
+          showMessage("Erreur de connexion au serveur", "error");
+        }
+      }
+
+      // Fonction pour supprimer un contact
+      async function deleteContact(contactId) {
+        if (!confirm("Êtes-vous sûr de vouloir supprimer ce contact ?")) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/contacts/${contactId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            showMessage("Contact supprimé avec succès !", "success");
+            loadContacts();
+          } else {
+            showMessage(result.message, "error");
+          }
+        } catch (error) {
+          showMessage("Erreur lors de la suppression du contact", "error");
+        }
+      }
+
+      // Mettre à jour la gestion du formulaire de contact
+      document
+        .getElementById("contactForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData);
+
+          // Supprimer le champ id du data si on est en mode création
+          if (!isEditMode) {
+            delete data.id;
+          }
+
+          try {
+            let response;
+            if (isEditMode) {
+              // Mode modification
+              response = await fetch(`${API_BASE}/contacts/${currentEditId}`, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${authToken}`,
+                },
+                body: JSON.stringify(data),
+              });
+            } else {
+              // Mode création
+              response = await fetch(`${API_BASE}/contacts`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${authToken}`,
+                },
+                body: JSON.stringify(data),
+              });
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+              showMessage(
+                isEditMode
+                  ? "Contact mis à jour avec succès !"
+                  : "Contact ajouté avec succès !",
+                "success"
+              );
+              e.target.reset();
+              toggleEditMode(false);
+              loadContacts();
+            } else {
+              showMessage(result.message, "error");
+            }
+          } catch (error) {
+            showMessage("Erreur lors de l'opération", "error");
+          }
+        });
+
       // Initialisation
       document.addEventListener("DOMContentLoaded", () => {
         // Cacher le champ nom au début (mode connexion)
-        document.getElementById("name").parentElement.style.display = "none";
+        const nameField = document.getElementById("name").parentElement;
+        const nameInput = document.getElementById("name");
+        nameField.style.display = "none";
+        nameInput.removeAttribute("required"); // S'assurer que le champ n'est pas requis au démarrage
+
+        // Initialiser le formulaire de contact en mode ajout
+        isEditMode = false;
+        currentEditId = null;
+        document.getElementById("formTitle").textContent = "Ajouter un contact";
+        document.getElementById("submitBtn").textContent = "Ajouter le contact";
+        document.getElementById("cancelBtn").style.display = "none";
       });
     </script>
   </body>

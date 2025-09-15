@@ -264,4 +264,134 @@ router.put("/:id/favorite", authenticateToken, async (req, res) => {
   }
 });
 
+// @route   DELETE /api/contacts/bulk
+// @desc    Supprimer plusieurs contacts en lot
+// @access  Private
+router.delete("/bulk", authenticateToken, async (req, res) => {
+  try {
+    const { contactIds } = req.body;
+
+    if (!contactIds || !Array.isArray(contactIds) || contactIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Liste des IDs de contacts requise",
+      });
+    }
+
+    // Vérifier que tous les contacts appartiennent à l'utilisateur
+    const contacts = await Contact.find({
+      _id: { $in: contactIds },
+      user: req.user._id,
+    });
+
+    if (contacts.length !== contactIds.length) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Certains contacts n'existent pas ou ne vous appartiennent pas",
+      });
+    }
+
+    // Supprimer les contacts
+    const result = await Contact.deleteMany({
+      _id: { $in: contactIds },
+      user: req.user._id,
+    });
+
+    res.json({
+      success: true,
+      message: `${result.deletedCount} contact(s) supprimé(s) avec succès`,
+      data: {
+        deletedCount: result.deletedCount,
+      },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la suppression en lot:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur lors de la suppression en lot",
+    });
+  }
+});
+
+// @route   GET /api/contacts/search/advanced
+// @desc    Recherche avancée des contacts
+// @access  Private
+router.get("/search/advanced", authenticateToken, async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      isFavorite,
+      company,
+      sortBy = "name",
+      sortOrder = "asc",
+    } = req.query;
+
+    // Construire la requête de recherche
+    const searchQuery = {
+      user: req.user._id,
+    };
+
+    if (search) {
+      searchQuery.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+        { company: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (isFavorite !== undefined) {
+      searchQuery.isFavorite = isFavorite === "true";
+    }
+
+    if (company) {
+      searchQuery.company = { $regex: company, $options: "i" };
+    }
+
+    // Options de tri
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    // Pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const contacts = await Contact.find(searchQuery)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Contact.countDocuments(searchQuery);
+
+    res.json({
+      success: true,
+      data: {
+        contacts,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / parseInt(limit)),
+          totalContacts: total,
+          hasNext: skip + contacts.length < total,
+          hasPrev: parseInt(page) > 1,
+        },
+        filters: {
+          search,
+          isFavorite,
+          company,
+          sortBy,
+          sortOrder,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la recherche avancée:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur lors de la recherche avancée",
+    });
+  }
+});
+
 module.exports = router;
