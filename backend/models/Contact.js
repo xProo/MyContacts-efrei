@@ -28,58 +28,6 @@ const contactSchema = new mongoose.Schema(
         "Veuillez entrer un numéro de téléphone français valide",
       ],
     },
-    address: {
-      street: {
-        type: String,
-        trim: true,
-        maxlength: [100, "L'adresse ne peut pas dépasser 100 caractères"],
-      },
-      city: {
-        type: String,
-        trim: true,
-        maxlength: [50, "La ville ne peut pas dépasser 50 caractères"],
-      },
-      postalCode: {
-        type: String,
-        trim: true,
-        match: [/^\d{5}$/, "Le code postal doit contenir 5 chiffres"],
-      },
-      country: {
-        type: String,
-        trim: true,
-        default: "France",
-        maxlength: [50, "Le pays ne peut pas dépasser 50 caractères"],
-      },
-    },
-    company: {
-      type: String,
-      trim: true,
-      maxlength: [
-        100,
-        "Le nom de l'entreprise ne peut pas dépasser 100 caractères",
-      ],
-    },
-    jobTitle: {
-      type: String,
-      trim: true,
-      maxlength: [100, "Le poste ne peut pas dépasser 100 caractères"],
-    },
-    notes: {
-      type: String,
-      trim: true,
-      maxlength: [500, "Les notes ne peuvent pas dépasser 500 caractères"],
-    },
-    tags: [
-      {
-        type: String,
-        trim: true,
-        maxlength: [20, "Un tag ne peut pas dépasser 20 caractères"],
-      },
-    ],
-    isFavorite: {
-      type: Boolean,
-      default: false,
-    },
     // Référence vers l'utilisateur propriétaire du contact
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -107,4 +55,3 @@ contactSchema.methods.getPublicInfo = function () {
 };
 
 module.exports = mongoose.model("Contact", contactSchema);
-
