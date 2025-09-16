@@ -17,71 +17,29 @@ const generateToken = (userId) => {
  * @swagger
  * /api/auth/register:
  *   post:
- *     summary: Inscription utilisateur
- *     tags: [Authentication]
- *     security: []
+ *     summary: Inscription
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - name
- *               - email
- *               - password
+ *             required: [name, email, password]
  *             properties:
- *               name:
- *                 type: string
- *                 example: "Jean Dupont"
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "jean.dupont@example.com"
- *               password:
- *                 type: string
- *                 minLength: 6
- *                 example: "motdepasse123"
+ *               name: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
  *     responses:
  *       201:
- *         description: Utilisateur créé avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Utilisateur créé avec succès"
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *                     token:
- *                       type: string
- *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *         description: OK
  *       400:
- *         description: Données invalides ou utilisateur déjà existant
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: Erreur
  */
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Validation des données
+    // Vérifier les champs requis
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -89,7 +47,7 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    // Vérifier si l'utilisateur existe déjà
+    // Vérifier si email déjà utilisé
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -98,7 +56,7 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    // Créer le nouvel utilisateur
+    // Créer l'utilisateur
     const user = new User({
       name,
       email,
@@ -107,7 +65,7 @@ router.post("/register", async (req, res) => {
 
     await user.save();
 
-    // Générer le token JWT
+    // Générer le token
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -141,72 +99,28 @@ router.post("/register", async (req, res) => {
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Connexion utilisateur
- *     tags: [Authentication]
- *     security: []
+ *     summary: Connexion
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - email
- *               - password
+ *             required: [email, password]
  *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "jean.dupont@example.com"
- *               password:
- *                 type: string
- *                 example: "motdepasse123"
+ *               email: { type: string }
+ *               password: { type: string }
  *     responses:
  *       200:
- *         description: Connexion réussie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Connexion réussie"
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *                     token:
- *                       type: string
- *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *       400:
- *         description: Données manquantes
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: OK
  *       401:
- *         description: Identifiants incorrects ou compte désactivé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: Mauvais identifiants
  */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation des données
+    // Vérifier les champs
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -214,7 +128,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Récupérer l'utilisateur avec le mot de passe
+    // Trouver l'utilisateur
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
@@ -234,7 +148,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Vérifier si le compte est actif
+    // Vérifier si compte actif
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
@@ -242,7 +156,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Générer le token JWT
+    // Générer le token
     const token = generateToken(user._id);
 
     res.json({
@@ -266,38 +180,12 @@ router.post("/login", async (req, res) => {
  * @swagger
  * /api/auth/me:
  *   get:
- *     summary: Récupérer les informations de l'utilisateur connecté
- *     tags: [Authentication]
+ *     summary: Profil utilisateur
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Informations utilisateur récupérées avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *       401:
- *         description: Token invalide ou manquant
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: OK
  */
 router.get("/me", authenticateToken, async (req, res) => {
   try {
@@ -320,8 +208,7 @@ router.get("/me", authenticateToken, async (req, res) => {
  * @swagger
  * /api/auth/profile:
  *   put:
- *     summary: Mettre à jour le profil utilisateur
- *     tags: [Authentication]
+ *     summary: Modifier profil
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -331,46 +218,10 @@ router.get("/me", authenticateToken, async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               name:
- *                 type: string
- *                 example: "Jean Dupont"
+ *               name: { type: string }
  *     responses:
  *       200:
- *         description: Profil mis à jour avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Profil mis à jour avec succès"
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *       400:
- *         description: Données invalides
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Token invalide ou manquant
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: OK
  */
 router.put("/profile", authenticateToken, async (req, res) => {
   try {

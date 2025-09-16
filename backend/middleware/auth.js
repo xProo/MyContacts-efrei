@@ -2,24 +2,24 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const config = require("../config/config");
 
-// Middleware pour vérifier l'authentification
+// Vérifier l'authentification
 const authenticateToken = async (req, res, next) => {
   try {
-    // Récupérer le token depuis l'en-tête Authorization
+    // Récupérer le token
     const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1]; // Format: "Bearer TOKEN"
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Token d'accès requis",
+        message: "Token requis",
       });
     }
 
-    // Vérifier et décoder le token
+    // Vérifier le token
     const decoded = jwt.verify(token, config.JWT_SECRET);
 
-    // Récupérer l'utilisateur depuis la base de données
+    // Trouver l'utilisateur
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {
@@ -32,7 +32,7 @@ const authenticateToken = async (req, res, next) => {
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: "Compte utilisateur désactivé",
+        message: "Compte désactivé",
       });
     }
 
@@ -40,7 +40,7 @@ const authenticateToken = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error("Erreur d'authentification:", error);
+    console.log("Erreur auth:", error);
 
     if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
@@ -63,7 +63,7 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Middleware optionnel pour vérifier l'authentification (ne bloque pas si pas de token)
+// Auth optionnelle (ne bloque pas si pas de token)
 const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];
@@ -80,7 +80,7 @@ const optionalAuth = async (req, res, next) => {
 
     next();
   } catch (error) {
-    // En cas d'erreur, continuer sans utilisateur authentifié
+    // Continuer sans utilisateur
     next();
   }
 };
