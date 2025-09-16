@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Le mot de passe est requis"],
       minlength: [6, "Le mot de passe doit contenir au moins 6 caractères"],
-      select: false, // Ne pas inclure le mot de passe dans les requêtes par défaut
+      select: false,
     },
     isActive: {
       type: Boolean,
@@ -33,19 +33,17 @@ const userSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Ajoute createdAt et updatedAt automatiquement
+    timestamps: true,
   }
 );
 
 // Middleware pour hasher le mot de passe avant la sauvegarde
 userSchema.pre("save", async function (next) {
-  // Ne hasher que si le mot de passe a été modifié
   if (!this.isModified("password")) {
     return next();
   }
 
   try {
-    // Hasher le mot de passe avec un salt de 12
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
     next();
@@ -54,12 +52,10 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Méthode pour comparer les mots de passe
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Méthode pour obtenir les informations publiques de l'utilisateur
 userSchema.methods.getPublicProfile = function () {
   const userObject = this.toObject();
   delete userObject.password;

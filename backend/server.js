@@ -98,7 +98,6 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 const authRoutes = require("./routes/auth");
 const contactRoutes = require("./routes/contacts");
 
-// Routes principales
 app.get("/", (req, res) => {
   res.json({
     message: "API MyContacts démarrée",
@@ -133,14 +132,11 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
-// Route Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Utilisation des routes
 app.use("/api/auth", authRoutes);
 app.use("/api/contacts", contactRoutes);
 
-// Middleware de gestion des erreurs 404
 app.use("*", (req, res) => {
   res.status(404).json({
     success: false,
@@ -149,7 +145,7 @@ app.use("*", (req, res) => {
   });
 });
 
-// Middleware de gestion des erreurs globales
+// gesion erreurs
 app.use((error, req, res, next) => {
   console.error("Erreur globale:", error);
   res.status(500).json({

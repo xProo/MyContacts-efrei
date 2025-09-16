@@ -2,10 +2,9 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const config = require("../config/config");
 
-// Vérifier l'authentification
 const authenticateToken = async (req, res, next) => {
   try {
-    // Récupérer le token
+    // ici on recup le token
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
 
@@ -16,10 +15,8 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Vérifier le token
     const decoded = jwt.verify(token, config.JWT_SECRET);
 
-    // Trouver l'utilisateur
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {
@@ -36,7 +33,6 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Ajouter l'utilisateur à la requête
     req.user = user;
     next();
   } catch (error) {
@@ -63,7 +59,6 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Auth optionnelle (ne bloque pas si pas de token)
 const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];
@@ -80,7 +75,6 @@ const optionalAuth = async (req, res, next) => {
 
     next();
   } catch (error) {
-    // Continuer sans utilisateur
     next();
   }
 };

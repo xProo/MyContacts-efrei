@@ -28,7 +28,7 @@ const contactSchema = new mongoose.Schema(
         "Veuillez entrer un numéro de téléphone français valide",
       ],
     },
-    // Référence vers l'utilisateur propriétaire du contact
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -36,7 +36,7 @@ const contactSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Ajoute createdAt et updatedAt automatiquement
+    timestamps: true, // Ajoute createdAt et updatedAt
   }
 );
 
@@ -45,10 +45,8 @@ contactSchema.index({ user: 1, name: 1 });
 contactSchema.index({ user: 1, email: 1 });
 contactSchema.index({ user: 1, phone: 1 });
 
-// Middleware pour s'assurer qu'un utilisateur ne peut pas avoir de contacts en doublon
 contactSchema.index({ user: 1, email: 1 }, { unique: true });
 
-// Méthode pour obtenir les informations publiques du contact
 contactSchema.methods.getPublicInfo = function () {
   const contactObject = this.toObject();
   return contactObject;
